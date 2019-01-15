@@ -214,7 +214,7 @@ public abstract class LinearOpMode8696 extends OpMode {
      * From the non-linear OpMode; do not override
      */
     @Override
-    final public void init() {
+    public void init() {
         this.executorService = ThreadPool.newSingleThreadExecutor("LinearOpMode");
         this.helper          = new LinearOpModeHelper();
         this.isStarted       = false;
@@ -227,7 +227,7 @@ public abstract class LinearOpMode8696 extends OpMode {
      * From the non-linear OpMode; do not override
      */
     @Override
-    final public void init_loop() {
+    public void init_loop() {
         handleLoop();
     }
 
@@ -235,7 +235,7 @@ public abstract class LinearOpMode8696 extends OpMode {
      * From the non-linear OpMode; do not override
      */
     @Override
-    final public void start() {
+    public void start() {
         stopRequested = false;
         isStarted = true;
         synchronized (this) {
@@ -247,7 +247,7 @@ public abstract class LinearOpMode8696 extends OpMode {
      * From the non-linear OpMode; do not override
      */
     @Override
-    final public void loop() {
+    public void loop() {
         handleLoop();
     }
 
