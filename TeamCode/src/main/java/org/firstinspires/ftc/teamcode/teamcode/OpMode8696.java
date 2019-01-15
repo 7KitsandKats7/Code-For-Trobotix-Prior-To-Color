@@ -1,322 +1,136 @@
 package org.firstinspires.ftc.teamcode.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
-import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.ServoControllerEx;
-import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
-
-import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-import org.firstinspires.ftc.teamcode.teamcode.buttonEvents.ButtonEvent;
-import org.firstinspires.ftc.teamcode.teamcode.buttonEvents.ButtonEventManager;
-
-// TODO: figure out how to use adb to graph some numbers.
-// TODO: use it to optimize turning and driving in auto
-// TODO: testing framework
-
-/**
- * Superclass used by all of team 8696's opModes.
- * Contains all the methods and functionality that
- * any generic robot might have.
+/* Copyright (c) 2017 FIRST. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted (subject to the limitations in the disclaimer below) provided that
+ * the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this list
+ * of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice, this
+ * list of conditions and the following disclaimer in the documentation and/or
+ * other materials provided with the distribution.
+ *
+ * Neither the name of FIRST nor the names of its contributors may be used to endorse or
+ * promote products derived from this software without specific prior written permission.
+ *
+ * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
+ * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public abstract class OpMode8696 extends LinearOpMode8696 {
 
-    protected DcMotor leftFront;
-    protected DcMotor rightFront;
-    protected DcMotor lift = null;
-    //private DcMotor extenderin = null;
-    protected Servo flipper = null;
-    protected CRServo latch = null;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-    protected ElapsedTime runtime = new ElapsedTime();
+@TeleOp(name="TroTeleOP", group="Linear Opmode")
+public class TroTeleOp extends OpMode8696 {
 
-    /**
-     * Array containing the four motors in the drive train <br>
-     * leftFront, rightFront, leftBack, rightBack
-     *
-     */
-    protected DcMotor[] motors = new DcMotor[2];
+    //No variables need to be initialized here. Yay!
 
-    protected BNO055IMU imu;
-
-    protected Acceleration gravity;
-    protected Orientation angles;
-
-    protected double driveSpeed = 1;
-
-    public static final boolean RED = true;
-    public static final boolean BLUE = false;
-
-    /**
-     * constant for how many encoder counts are
-     * equivalent to rotating the robot one degree.
-     */
-    private static final double TURN_COEFFICIENT = 15 / 1.4;
-
-    private long lastPeriodicCall = 0;
-    protected VuforiaTrackable relicTemplate;
-
-    protected ButtonEventManager buttonEvents;
-
-    /**
-     * Check if enough time has passed to call {@link #periodic()} again.
-     * If so, call it. Should be called every iteration of the main loop.
-     * @param ms number of milliseconds between every {@link #periodic()}
-     * @see #periodic()
-     */
-    protected void periodic(long ms) {
-        long t = System.currentTimeMillis();
-        if (t >= lastPeriodicCall + ms) {
-            lastPeriodicCall = t;
-            periodic();
-        }
-    }
-
-    /**
-     * Method that will be called periodically.
-     * @see #periodic(long ms)
-     */
-    protected void periodic() {
-
-    }
-
-    protected void initRobot() {
-        initDriveTrain();
-        lastPeriodicCall = System.currentTimeMillis();
-        buttonEvents = new ButtonEventManager(gamepad1, gamepad2);
-    }
-
-    protected void initDriveTrain() {
-        leftFront  = hardwareMap.get(DcMotor.class, "left_drive"); //0
-        rightFront = hardwareMap.get(DcMotor.class, "right_drive");//1
-
-        lift = hardwareMap.get(DcMotor.class, "lift");
-        flipper = hardwareMap.get(Servo.class, "flipper");
-        latch = hardwareMap.get(CRServo.class, "latch");
-
-        motors[0] = leftFront;
-        motors[1] = rightFront;
-
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.FORWARD);
-        lift.setDirection(DcMotor.Direction.REVERSE);
-    }
-
-
-    /**
-     * Add events for a specific button
-     * @param gamepad which gamepad the button is on
-     * @param event the event to be called
-     */
-    protected void addButtonEvent(int gamepad, ButtonEvent event) {
-        buttonEvents.addButtonEvent(gamepad, event);
-    }
-
-    protected void initGyro() {
-        telemetry.log().add("initializing imu...");
-
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.calibrationDataFile = "BNO055IMUCalibration.json";
-        parameters.loggingEnabled      = true;
-        parameters.loggingTag          = "IMU";
-        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        boolean initialized = imu.initialize(parameters);
-
-        telemetry.log().clear();
-        telemetry.log().add(initialized ? "imu initialized successfully" : "imu failed to initialize");
-
-    }
-
-    protected double getGamepadAngle(double x, double y) {
-        double angle  = Math.atan(-y / x);
-        if (x < 0) angle += Math.PI;
-
-        return angle;
-    }
-
-    protected double getMagnitude(double x, double y) {
-        double magnitude = Math.sqrt(x*x + y*y);
-        return Range.clip(magnitude, -1, 1);
-    }
-
-    /*protected void autoTurn(double angle, double power, double timeoutSeconds, boolean useEncoders) {
-        autoTurn(angle, power, timeoutSeconds, useEncoders, new RunUntil() {
-            public boolean stop() {
-                return false;
-            }
-        });
-    }
-
-    protected void autoTurn(double angle, double power, double timeoutSeconds, boolean useEncoders, RunUntil runUntil) {
-        runtime.reset();
-        getGyroData();
-
-        while (opModeIsActive() &&
-                onHeading(angle, power, 1.0, useEncoders) &&
-                runtime.seconds() < timeoutSeconds &&
-                !runUntil.stop()) {
-            idle();
-            runMotors();
-            for (DcMotor motor: motors) {
-                motor.setPower(0);
-            }
-        }
-        runMotors();
-    }
-    */
-
-    protected boolean onHeading(double angle, double power, double maxError, boolean useEncoders) {
-        getGyroData();
-
-        double diff = adjustAngle(angle, angles.firstAngle);
-
-        if (Math.abs(diff) > maxError) {
-            if (useEncoders)
-                encoderTurning(diff, power);
-            else
-                crappyTurning(diff, power);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Incrementally rotate the robot using the encoders, which makes use of the built in PID stuff.
-     *
-     * @param diff how much the robot needs to rotate to get to its target orientation.
-     * @param power how much power to send to the motors.
-     */
-    private void encoderTurning(double diff, double power) {
-        int prevCounts[] = new int[2];
-        int count = 0;
-        double prevPower = 0.0;
-
-        for (DcMotor motor : motors) {
-            prevCounts[count] = motor.getCurrentPosition();
-            motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            count += 1;
-        }
-        leftFront .setTargetPosition(prevCounts[0] - ((int) (diff * TURN_COEFFICIENT)));
-        rightFront.setTargetPosition(prevCounts[1] - (int)-(diff * TURN_COEFFICIENT));
-
-        for (DcMotor motor : motors) {
-            prevPower = motor.getPower();
-            motor.setPower(prevPower + power);
-        }
-    }
-
-    /**
-     * Incrementally rotate the robot using just the powers. Adjust the power as it gets close to the target.
-     *
-     * @param diff how much the robot needs to rotate to get to its target orientation.
-     * @param power how much power to send to the motors.
-     */
-    private void crappyTurning(double diff, double power) {
-        for (DcMotor motor : motors) {
-            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            telemetry.addData(motor.getPortNumber() + "", motor.getCurrentPosition());
-        }
-
-        double temp = diff/30 * power;
-        if (Math.abs(temp) < Math.abs(power))
-            power = temp;
-        else if (temp < 0) {
-            power *= -1;
-        }
-        if (Math.abs(power) <= 0.15) {
-            if (power < 0)
-                power = -0.15;
-            else
-                power = 0.15;
-        }
-
-        telemetry.addData("power", power);
+    @Override
+    public void runOpMode() {
+        telemetry.addData("Status", "Initialized");
         telemetry.update();
 
-        leftFront .setPower( power);
-        rightFront.setPower(-power);
-    }
+        //Initializes the robots parts, including wheels and lifting mechanism.
+        initRobot();
+        waitForStart();
+        
+        //Run until the end of the match (driver presses STOP)
+        while (opModeIsActive()) {
 
-    /**
-     * Calculate the difference between two angles and set the output to be in a range.
-     * Used for calculating how far the robot needs to turn to get to a target rotation.
-     * @param target The target rotation
-     * @param currentRotation The current robot orientation, (preferably) found by a gyro sensor.
-     * @return Adjusted angle, -180 <= angle <= 180
-     */
-    protected double adjustAngle(double target, double currentRotation) {
-        double diff = target - currentRotation;
-        while (Math.abs(diff) > 180) {
-            target += (diff >= 180) ? -360 : 360;
-            diff = target - currentRotation;
-        }
-        return diff;
-    }
+            //Sets power for the tank drive mecanum wheels. We use the left and right gamepad 1 sticks in order to do this.
+            leftBack.setPower(gamepad1.left_stick_y);
+            leftFront.setPower(gamepad1.left_stick_y);
+            rightBack.setPower(-gamepad1.right_stick_y);
+            rightFront.setPower(-gamepad1.right_stick_y);
 
-    /*protected void autoDrive(double inches, double power, double timeoutSeconds) {
-        autoDrive(inches, power, timeoutSeconds, new RunUntil() {
-            @Override
-            public boolean stop() {
-                return false;
+            //Strafing right for the right bumper and left for the left bumper.
+            //Helps with aligning our robot to the lander correctly.
+            if (gamepad1.right_bumper){
+                leftBack.setPower(-1);
+                leftFront.setPower(1);
+                rightBack.setPower(-1);
+                rightFront.setPower(1);
             }
-        });
-    }
+            if (gamepad1.left_bumper){
+                leftBack.setPower(1);
+                leftFront.setPower(-1);
+                rightBack.setPower(1);
+                rightFront.setPower(-1);
+            }
 
-    /*protected void autoDrive(double inches, double power, double timeoutSeconds, RunUntil runUntil) {
-        for ( motor : motors) {
-            motor.storePosition();
-            motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            //All other controls besides movement reside on the second controller. It makes the driver's life easier.
 
-            motor.setRelativeTarget((int) (-inches / (4 * Math.PI) * Motor8696.COUNTS_PER_REVOLUTION));
+            //Lift controls are set on the Dpad. Originally we had the latch also on the left and right
+            //dpad, but the controls would interfere.
+            if (gamepad2.dpad_down) lift.setPower(-1);
+            if (gamepad2.dpad_up) lift.setPower(1);
+            if (!gamepad2.dpad_down && !gamepad2.dpad_up) lift.setPower(0);
 
-            motor.setPower(power);
+            //Latch controls put on x and b for easier reach.
+            if (gamepad2.x) latch.setPower(-1);
+            if (gamepad2.b) latch.setPower(1);
+            if (!gamepad2.x && !gamepad2.b) latch.setPower(0);
+
+            //This pivots the sliders to whatever position we desire.
+            //We have to put a lower speed on going down to combat gravity.
+            if (-gamepad2.left_stick_y > 0){
+                leftPivot.setPower(0.3);
+                rightPivot.setPower(0.3);
+            }
+            if (-gamepad2.left_stick_y < 0){
+                leftPivot.setPower(-0.6);
+                rightPivot.setPower(-0.6);
+            }
+            if (-gamepad2.left_stick_y == 0){
+                leftPivot.setPower(0);
+                rightPivot.setPower(0);
+            }
+
+            //This pivots the sliders to whatever position we desire.
+            //We have to put a lower speed on going down to combat gravity.
+            if (-gamepad2.right_stick_y > 0){
+                leftPivot.setPower(0.5);
+                rightPivot.setPower(0.5);
+            }
+            if (-gamepad2.right_stick_y < 0){
+                leftPivot.setPower(-1);
+                rightPivot.setPower(-1);
+            }
+            if (-gamepad2.right_stick_y == 0){
+                leftPivot.setPower(0);
+                rightPivot.setPower(0);
+            }
+
+            //Big Bertha is what our engineers called the motor that slides
+            //the slider in and out. We kept it like that in code.
+            if (gamepad2.a){
+                bigBertha.setPower(-1);
+            }
+            if (gamepad2.y){
+                bigBertha.setPower(1);
+            }
+            if (!gamepad2.y && !gamepad2.a){
+                bigBertha.setPower(0);
+            }
+
+            // Perfect latch timing in order to prepare the robot for the auto.
+            if (gamepad1.x){
+                latch.setPower(-1);
+                sleep(6000);
+                latch.setPower(0);
+            }
+
         }
-
-        runtime.reset();
-
-        while (opModeIsActive() &&
-                runtime.seconds() < timeoutSeconds &&
-                Motor8696.motorsBusy(motors) &&
-                !runUntil.stop()) {
-            idle();
-        }
-
-        for (Motor8696 motor : motors) {
-            motor.setPower(0);
-            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        }
-    }
-
-    protected void runMotors() {
-        for (Motor8696 motor : motors) {
-            motor.setPower();
-        }
-    }
-
-    protected void enableEncoders() {
-        for (Motor8696 motor : motors) {
-            motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        }
-    }
-
-    /**
-     * Stores the gyro data into instance fields.
-     */
-    protected void getGyroData() {
-        gravity = imu.getGravity();
-        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
     }
 }
